@@ -25,10 +25,6 @@ function CertCard({ cert, trackColor, completed, onToggle, saving, isGuest }) {
   const router = useRouter();
 
   function handleCheck() {
-    if (isGuest) {
-      router.push('/register');
-      return;
-    }
     if (!saving) onToggle(cert.code, !completed);
   }
 
@@ -41,19 +37,12 @@ function CertCard({ cert, trackColor, completed, onToggle, saving, isGuest }) {
         <button
           className="cert-checkbox"
           onClick={handleCheck}
-          title={isGuest ? 'Sign in to track progress' : 'Mark as completed'}
+          title="Mark as completed"
           disabled={saving}
-          style={isGuest ? { cursor: 'pointer', opacity: 0.5 } : {}}
         >
           {completed && (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
               <path d="M20 6L9 17l-5-5" />
-            </svg>
-          )}
-          {isGuest && !completed && (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 12, height: 12, color: 'var(--text-muted)' }}>
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
           )}
         </button>
@@ -191,6 +180,16 @@ export default function DashboardPage() {
   }
 
   async function handleToggle(code, completed) {
+    // Guest: update local state only — not saved to DB
+    if (isGuest) {
+      if (completed) {
+        setCompletedSet(s => new Set([...s, code]));
+      } else {
+        setCompletedSet(s => { const n = new Set(s); n.delete(code); return n; });
+      }
+      return;
+    }
+
     setSaving(true);
     const prev = new Set(completedSet);
     if (completed) {
@@ -304,15 +303,14 @@ export default function DashboardPage() {
       {/* Guest banner */}
       {isGuest && (
         <div className="guest-banner">
-          🔒 <strong>Create a free account</strong> to save your progress and track certifications across sessions.{' '}
-          <Link href="/register">Get started →</Link>
+          🚧 <strong>BETA</strong> — Create your account to save your progress.{' '}
+          <Link href="/register">Sign up free →</Link>
         </div>
       )}
 
       {/* Hero */}
       <div className="hero">
         <h1 className="hero-title">Red Hat <span>Certification</span> Tracker</h1>
-        <p className="hero-subtitle">2026 Official Catalog — Track your progress across all 5 specialization tracks</p>
 
         <div className="stats-grid">
           <div className="stat-card">
