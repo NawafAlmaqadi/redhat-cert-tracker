@@ -56,6 +56,19 @@ input, select { font: inherit; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 99px; }
 
+/* ─── Guest Banner ──────────────────────────────────────────────── */
+.guest-banner {
+  background: linear-gradient(135deg, rgba(17,17,17,0.04), rgba(124,58,237,0.04));
+  border-bottom: 1px solid var(--border);
+  padding: 10px 24px;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+.guest-banner a { color: var(--rh-red); font-weight: 600; }
+.guest-banner a:hover { text-decoration: underline; }
+[data-theme="dark"] .guest-banner { background: rgba(255,255,255,0.03); }
+
 /* ─── Auth Pages ────────────────────────────────────────────────── */
 .auth-page {
   min-height: 100vh;

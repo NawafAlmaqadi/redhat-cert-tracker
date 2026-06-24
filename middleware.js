@@ -6,19 +6,26 @@ const COOKIE_NAME = 'rh_token';
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
 
-  // Public paths that don't need auth
-  const publicPaths = ['/login', '/register', '/api/auth/login', '/api/auth/register'];
-  if (publicPaths.some(p => pathname.startsWith(p))) {
+  // Public paths — no auth required
+  const publicPaths = [
+    '/',
+    '/dashboard',
+    '/login',
+    '/register',
+    '/api/auth/login',
+    '/api/auth/register',
+    '/api/auth/me',
+  ];
+  if (publicPaths.some(p => pathname === p || pathname.startsWith(p + '/'))) {
     return NextResponse.next();
   }
 
   const token = request.cookies.get(COOKIE_NAME)?.value;
   const payload = token ? await verifyToken(token) : null;
 
-  // Redirect unauthenticated users to /login
+  // Only protect private API routes (e.g. /api/certs)
   if (!payload) {
-    const loginUrl = new URL('/login', request.url);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   return NextResponse.next();

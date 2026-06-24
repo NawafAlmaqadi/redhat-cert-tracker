@@ -1,12 +1,13 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { TRACKS } from '@/data/certs';
 
-// ── helpers ────────────────────────────────────────────────────────
 function allCerts(track) {
   return track.levels.flatMap(l => l.certs);
 }
+
 function Badge({ type }) {
   const map = {
     technologist: ['badge-level', 'Technologist'],
@@ -19,8 +20,17 @@ function Badge({ type }) {
 }
 
 // ── CertCard ───────────────────────────────────────────────────────
-function CertCard({ cert, trackColor, completed, onToggle, saving }) {
+function CertCard({ cert, trackColor, completed, onToggle, saving, isGuest }) {
   const [expanded, setExpanded] = useState(false);
+  const router = useRouter();
+
+  function handleCheck() {
+    if (isGuest) {
+      router.push('/register');
+      return;
+    }
+    if (!saving) onToggle(cert.code, !completed);
+  }
 
   return (
     <div
@@ -30,13 +40,20 @@ function CertCard({ cert, trackColor, completed, onToggle, saving }) {
       <div className="cert-card-top">
         <button
           className="cert-checkbox"
-          onClick={() => !saving && onToggle(cert.code, !completed)}
-          title="Mark as completed"
+          onClick={handleCheck}
+          title={isGuest ? 'Sign in to track progress' : 'Mark as completed'}
           disabled={saving}
+          style={isGuest ? { cursor: 'pointer', opacity: 0.5 } : {}}
         >
           {completed && (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
               <path d="M20 6L9 17l-5-5" />
+            </svg>
+          )}
+          {isGuest && !completed && (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: 12, height: 12, color: 'var(--text-muted)' }}>
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
             </svg>
           )}
         </button>
@@ -78,13 +95,11 @@ function CertCard({ cert, trackColor, completed, onToggle, saving }) {
 }
 
 // ── TrackSection ───────────────────────────────────────────────────
-function TrackSection({ track, completedSet, onToggle, saving, visible }) {
+function TrackSection({ track, completedSet, onToggle, saving, isGuest }) {
   const certs = allCerts(track);
   const done = certs.filter(c => completedSet.has(c.code)).length;
   const total = certs.filter(c => c.type !== 'architect').length;
   const pct = total ? Math.round((done / total) * 100) : 0;
-
-  if (!visible) return null;
 
   return (
     <section className="track-section" id={`section-${track.id}`}>
@@ -119,6 +134,7 @@ function TrackSection({ track, completedSet, onToggle, saving, visible }) {
                 completed={completedSet.has(cert.code)}
                 onToggle={onToggle}
                 saving={saving}
+                isGuest={isGuest}
               />
             ))}
           </div>
@@ -131,7 +147,7 @@ function TrackSection({ track, completedSet, onToggle, saving, visible }) {
 // ── Dashboard Page ─────────────────────────────────────────────────
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null);         // null = guest, object = logged in
   const [completedSet, setCompletedSet] = useState(new Set());
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -142,20 +158,20 @@ export default function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [toast, setToast] = useState(null);
 
-  // load user + certs
+  // Try to load user — if not logged in, show as guest (don't redirect)
   useEffect(() => {
-    fetch('/api/auth/me').then(r => {
-      if (!r.ok) { router.push('/login'); return; }
-      return r.json();
-    }).then(data => {
-      if (!data) return;
-      setUser(data);
-      setCompletedSet(new Set(data.completedCerts));
-      setLoading(false);
-    }).catch(() => router.push('/login'));
-  }, [router]);
+    fetch('/api/auth/me')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          setUser(data);
+          setCompletedSet(new Set(data.completedCerts));
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
-  // theme persistence
   useEffect(() => {
     const saved = localStorage.getItem('rh_theme') || 'light';
     setTheme(saved);
@@ -214,10 +230,12 @@ export default function DashboardPage() {
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' });
-    router.push('/login');
+    setUser(null);
+    setCompletedSet(new Set());
+    showToast('Signed out', 'info');
   }
 
-  // stats
+  const isGuest = !user;
   const allCertsFlat = TRACKS.flatMap(allCerts);
   const totalExams = allCertsFlat.filter(c => c.type !== 'architect').length;
   const completedCount = allCertsFlat.filter(c => completedSet.has(c.code) && c.type !== 'architect').length;
@@ -229,7 +247,6 @@ export default function DashboardPage() {
     return reqDone === req.required.length && elDone >= (req.electivesNeeded || 0);
   }).length;
 
-  // filter logic
   function certMatchesFilters(cert) {
     const q = search.toLowerCase();
     if (q && !cert.code.toLowerCase().includes(q) && !cert.name.toLowerCase().includes(q)) return false;
@@ -241,7 +258,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-primary)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
         <div className="spinner" />
       </div>
     );
@@ -261,17 +278,36 @@ export default function DashboardPage() {
           </div>
           <div className="header-spacer" />
           <div className="header-actions">
-            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-              👤 {user?.displayName}
-            </span>
-            <button className="btn btn-ghost" onClick={handleReset}>Reset</button>
-            <button className="btn btn-ghost" onClick={handleLogout}>Sign out</button>
+            {isGuest ? (
+              <>
+                <Link href="/login" className="btn btn-ghost">Sign in</Link>
+                <Link href="/register" className="btn btn-primary" style={{ padding: '7px 14px', fontSize: '0.85rem' }}>
+                  Create account
+                </Link>
+              </>
+            ) : (
+              <>
+                <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                  👤 {user.displayName}
+                </span>
+                <button className="btn btn-ghost" onClick={handleReset}>Reset</button>
+                <button className="btn btn-ghost" onClick={handleLogout}>Sign out</button>
+              </>
+            )}
             <button className="theme-toggle" onClick={toggleTheme} title="Toggle theme">
               {theme === 'light' ? '🌙' : '☀️'}
             </button>
           </div>
         </div>
       </header>
+
+      {/* Guest banner */}
+      {isGuest && (
+        <div className="guest-banner">
+          🔒 <strong>Create a free account</strong> to save your progress and track certifications across sessions.{' '}
+          <Link href="/register">Get started →</Link>
+        </div>
+      )}
 
       {/* Hero */}
       <div className="hero">
@@ -338,7 +374,6 @@ export default function DashboardPage() {
       <main className="main-content">
         {TRACKS.map(track => {
           const trackVisible = activeTrack === 'all' || activeTrack === track.id;
-          // filter certs per level
           const filteredTrack = {
             ...track,
             levels: track.levels.map(lvl => ({
@@ -355,13 +390,12 @@ export default function DashboardPage() {
               completedSet={completedSet}
               onToggle={handleToggle}
               saving={saving}
-              visible={true}
+              isGuest={isGuest}
             />
           );
         })}
       </main>
 
-      {/* Toast */}
       {toast && (
         <div className={`toast ${toast.type}`}>
           {toast.type === 'success' ? '✓' : 'ℹ'} {toast.msg}
