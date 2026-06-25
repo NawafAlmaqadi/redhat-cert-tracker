@@ -444,10 +444,68 @@ input, select { font: inherit; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ─── Responsive ────────────────────────────────────────────────── */
+
+/* Tablet */
+@media (max-width: 900px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .filter-select { flex: 1; min-width: 130px; }
+}
+
+/* Mobile */
 @media (max-width: 640px) {
-  .certs-grid { grid-template-columns: 1fr; }
-  .track-bar-wrap { display: none; }
-  .auth-card { padding: 28px 20px; }
-  .header-inner { padding: 0 16px; }
+  /* Header */
+  .header-inner { padding: 0 16px; height: 56px; gap: 8px; }
+  .logo-text { font-size: 0.95rem; }
+  .user-name { display: none; }
+  .btn-register { display: none; }
+  .btn { padding: 6px 10px; font-size: 0.8rem; gap: 4px; }
+  .theme-toggle { width: 34px; height: 34px; font-size: 1rem; }
+  .header-actions { gap: 6px; }
+
+  /* Guest banner */
+  .guest-banner { padding: 8px 16px; font-size: 0.8rem; }
+
+  /* Layout */
   .hero, .controls, .main-content { padding-left: 16px; padding-right: 16px; }
+  .hero { padding-top: 20px; }
+  .controls { padding-bottom: 16px; }
+  .main-content { padding-bottom: 40px; }
+
+  /* Stats */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+  .stat-card { padding: 14px 16px; }
+  .stat-value { font-size: 1.7rem; }
+
+  /* Chips: horizontal scroll */
+  .chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { white-space: nowrap; flex-shrink: 0; }
+
+  /* Filter bar: stack vertically */
+  .filter-bar { flex-direction: column; gap: 8px; }
+  .search-input { min-width: unset; width: 100%; }
+  .filter-select { width: 100%; }
+
+  /* Track */
+  .track-section { margin-bottom: 32px; }
+  .track-header { padding: 12px 14px; gap: 10px; }
+  .track-icon { width: 36px; height: 36px; font-size: 0.95rem; }
+  .track-bar-wrap { display: none; }
+
+  /* Certs */
+  .certs-grid { grid-template-columns: 1fr; gap: 10px; }
+  .cert-card { padding: 14px; }
+
+  /* Auth */
+  .auth-card { padding: 28px 20px; }
+  .auth-page { padding: 16px; }
+
+  /* Toast: full width at bottom */
+  .toast { left: 16px; right: 16px; bottom: 16px; text-align: center; }
 }
