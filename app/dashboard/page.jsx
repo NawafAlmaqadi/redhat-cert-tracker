@@ -280,13 +280,13 @@ export default function DashboardPage() {
             {isGuest ? (
               <>
                 <Link href="/login" className="btn btn-ghost">Sign in</Link>
-                <Link href="/register" className="btn btn-primary" style={{ padding: '7px 14px', fontSize: '0.85rem' }}>
+                <Link href="/register" className="btn btn-primary btn-register" style={{ padding: '7px 14px', fontSize: '0.85rem' }}>
                   Create account
                 </Link>
               </>
             ) : (
               <>
-                <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                <span className="user-name" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
                   👤 {user.displayName}
                 </span>
                 <button className="btn btn-ghost" onClick={handleReset}>Reset</button>
